@@ -1,0 +1,746 @@
+﻿<!DOCTYPE html>
+<html lang="mk">
+<head>
+    <meta charset="UTF-8">
+    <title>LearnGrid</title>
+    <style>
+        :root {
+            --bg: #f5f6fa;
+            --card: #ffffff;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --danger: #dc2626;
+            --success: #16a34a;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        header {
+            background: var(--accent);
+            color: white;
+            padding: 20px 32px;
+            font-size: 22px;
+            font-weight: 600;
+        }
+        nav {
+            display: flex;
+            gap: 4px;
+            padding: 12px 24px 0;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+        nav button {
+            border: none;
+            background: none;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--muted);
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+        }
+        nav button.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            font-weight: 600;
+        }
+        main {
+            padding: 24px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .tab { display: none; }
+        .tab.active { display: block; }
+        .card {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .card h3 { margin-top: 0; }
+        form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            align-items: end;
+        }
+        label {
+            font-size: 12px;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 4px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        button.primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            height: 38px;
+        }
+        button.primary:hover { background: var(--accent-hover); }
+        button.small {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            background: white;
+            cursor: pointer;
+            margin-right: 4px;
+        }
+        button.small.danger { color: var(--danger); border-color: #fecaca; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        th, td {
+            text-align: left;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+        .badge {
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge.active { background: #dbeafe; color: #1d4ed8; }
+        .badge.completed { background: #dcfce7; color: #15803d; }
+        .badge.dropped { background: #fee2e2; color: #b91c1c; }
+        .msg { font-size: 13px; margin-top: 8px; }
+        .msg.error { color: var(--danger); }
+        .msg.success { color: var(--success); }
+
+        .thumb { width: 32px; height: 48px; object-fit: cover; border-radius: 3px; }
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+        .modal-backdrop.open { display: flex; }
+        .modal {
+            width: min(680px, 100%);
+            max-height: 90vh;
+            overflow-y: auto;
+            background: var(--card);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .modal-header h3 { margin: 0; }
+        .modal-close {
+            border: none;
+            background: none;
+            font-size: 24px;
+            color: var(--muted);
+            cursor: pointer;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 18px;
+        }
+        button.small.edit { color: var(--accent); border-color: #c7d2fe; }
+        button.secondary {
+            background: white;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            height: 38px;
+        }
+
+    </style>
+</head>
+<body>
+
+<header>LearnGrid</header>
+
+<nav id="nav"></nav>
+
+<main id="main"></main>
+
+<div class="modal-backdrop" id="editModalBackdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="editModalTitle">Измени</h3>
+            <button class="modal-close" type="button" onclick="closeEditModal()">&times;</button>
+        </div>
+        <form id="editModalForm"></form>
+    </div>
+</div>
+
+<script>
+    const API = '/api';
+
+    const tabs = ['teacher','course','class','student','teachingassignment','enrollment','resource','etl'];
+    const labels = {
+        teacher: 'Наставници', course: 'Курсеви', class: 'Класи', student: 'Студенти',
+        teachingassignment: 'Распореди', enrollment: 'Запишувања', resource: 'Ресурси', etl: 'ETL'
+    };
+
+    let cache = { teachers: [], courses: [], classes: [], students: [] };
+
+    function nav() {
+        const nav = document.getElementById('nav');
+        nav.innerHTML = tabs.map(t => `<button data-tab="${t}" class="${t==='teacher'?'active':''}">${labels[t]}</button>`).join('');
+        nav.querySelectorAll('button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+    }
+
+    function showTab(tab) {
+        document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        render[tab]();
+    }
+
+    async function api(path, method = 'GET', body = null) {
+        const opts = { method, headers: {} };
+        if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+        const res = await fetch(API + path, opts);
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || res.statusText);
+        }
+        const text = await res.text();
+        return text ? JSON.parse(text) : null;
+    }
+
+    function msg(el, text, isError) {
+        el.textContent = text;
+        el.className = 'msg ' + (isError ? 'error' : 'success');
+        setTimeout(() => { el.textContent = ''; }, 4000);
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModalBackdrop').classList.remove('open');
+    }
+
+    async function openEditModal(title, endpoint, fields, onSuccess) {
+        try {
+            const entity = await api(endpoint);
+            const backdrop = document.getElementById('editModalBackdrop');
+            const titleEl = document.getElementById('editModalTitle');
+            const form = document.getElementById('editModalForm');
+
+            titleEl.textContent = title;
+            form.innerHTML = `
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+                    ${fields.map(field => {
+                const value = entity[field.name] ?? '';
+                if (field.type === 'select') {
+                    return `<div>
+                                <label>${field.label}</label>
+                                <select name="${field.name}" ${field.required ? 'required' : ''}>
+                                    ${field.options.map(option => `
+                                        <option value="${escapeHtml(option.value)}" ${String(option.value) === String(value) ? 'selected' : ''}>${escapeHtml(option.label)}</option>
+                                    `).join('')}
+                                </select>
+                            </div>`;
+                }
+                return `<div>
+                            <label>${field.label}</label>
+                            <input name="${field.name}" type="${field.type || 'text'}" value="${escapeHtml(value)}" ${field.required ? 'required' : ''}>
+                        </div>`;
+            }).join('')}
+                </div>
+                <div class="msg" id="editModalMsg"></div>
+                <div class="modal-actions">
+                    <button class="secondary" type="button" onclick="closeEditModal()">Откажи</button>
+                    <button class="primary" type="submit">Зачувај промени</button>
+                </div>`;
+
+            form.onsubmit = async (event) => {
+                event.preventDefault();
+                const data = Object.fromEntries(new FormData(form));
+                fields.forEach(field => {
+                    if (field.type === 'number') data[field.name] = Number(data[field.name]);
+                });
+
+                const message = document.getElementById('editModalMsg');
+                try {
+                    await api(endpoint, 'PUT', data);
+                    closeEditModal();
+                    await onSuccess();
+                } catch (err) {
+                    msg(message, err.message, true);
+                }
+            };
+
+            backdrop.classList.add('open');
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    document.getElementById('editModalBackdrop').addEventListener('click', (event) => {
+        if (event.target.id === 'editModalBackdrop') closeEditModal();
+    });
+
+    async function refreshCache() {
+        cache.teachers = await api('/teacher');
+        cache.courses = await api('/course');
+        cache.classes = await api('/class');
+        cache.students = await api('/student');
+    }
+
+    function nameOf(list, id) {
+        const item = list.find(x => x.id === id);
+        return item ? (item.fullName || item.title || item.name) : id;
+    }
+
+    // ---------- MAIN LAYOUT ----------
+    document.getElementById('main').innerHTML = tabs.map(t => `<div class="tab" id="tab-${t}"></div>`).join('');
+
+    // ---------- TEACHER ----------
+    const render = {};
+
+    render.teacher = async function () {
+        const el = document.getElementById('tab-teacher');
+        const teachers = await api('/teacher');
+        el.innerHTML = `
+        <div class="card">
+            <h3>Нов наставник</h3>
+            <form id="teacherForm">
+                <div><label>Име</label><input name="fullName" required></div>
+                <div><label>Емаил</label><input name="email" type="email" required></div>
+                <div><label>Звање</label><input name="title"></div>
+                <div><label>Биографија</label><input name="bio"></div>
+                <div><button class="primary" type="submit">Зачувај</button></div>
+            </form>
+            <div class="msg" id="teacherMsg"></div>
+        </div>
+        <div class="card">
+            <h3>Наставници (${teachers.length})</h3>
+            <table><thead><tr><th>Име</th><th>Емаил</th><th>Звање</th><th></th></tr></thead>
+            <tbody>${teachers.map(t => `<tr>
+                <td>${t.fullName}</td><td>${t.email}</td><td>${t.title ?? ''}</td>
+                <td>
+                    <button class="small edit" onclick="editTeacher('${t.id}')">Измени</button>
+                    <button class="small danger" onclick="deleteTeacher('${t.id}')">Избриши</button>
+                </td>
+            </tr>`).join('')}</tbody></table>
+        </div>`;
+
+        document.getElementById('teacherForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const f = new FormData(e.target);
+            try {
+                await api('/teacher', 'POST', Object.fromEntries(f));
+                msg(document.getElementById('teacherMsg'), 'Зачувано.', false);
+                e.target.reset();
+                render.teacher();
+            } catch (err) { msg(document.getElementById('teacherMsg'), err.message, true); }
+        };
+    };
+
+    window.deleteTeacher = async (id) => {
+        if (!confirm('Избриши го наставникот?')) return;
+        await api('/teacher/' + id, 'DELETE');
+        render.teacher();
+    };
+
+    window.editTeacher = async (id) => {
+        await openEditModal('Измени наставник', '/teacher/' + id, [
+            { name: 'fullName', label: 'Име', required: true },
+            { name: 'email', label: 'Емаил', type: 'email', required: true },
+            { name: 'title', label: 'Звање' },
+            { name: 'bio', label: 'Биографија' }
+        ], render.teacher);
+    };
+
+    // ---------- COURSE ----------
+    render.course = async function () {
+        const el = document.getElementById('tab-course');
+        const courses = await api('/course');
+        el.innerHTML = `
+        <div class="card">
+            <h3>Нов курс</h3>
+            <form id="courseForm">
+                <div><label>Наслов</label><input name="title" required></div>
+                <div><label>Категорија</label><input name="category" required placeholder="на пр. python programming"></div>
+                <div><label>Часови</label><input name="durationInHours" type="number" required></div>
+                <div><label>Опис</label><input name="description"></div>
+                <div><button class="primary" type="submit">Зачувај</button></div>
+            </form>
+            <div class="msg" id="courseMsg"></div>
+        </div>
+        <div class="card">
+            <h3>Курсеви (${courses.length})</h3>
+            <table><thead><tr><th>Наслов</th><th>Категорија</th><th>Часови</th><th></th></tr></thead>
+            <tbody>${courses.map(c => `<tr>
+                <td>${c.title}</td><td>${c.category}</td><td>${c.durationInHours}</td>
+                <td>
+                    <button class="small edit" onclick="editCourse('${c.id}')">Измени</button>
+                    <button class="small danger" onclick="deleteCourse('${c.id}')">Избриши</button>
+                </td>
+            </tr>`).join('')}</tbody></table>
+        </div>`;
+
+        document.getElementById('courseForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const f = Object.fromEntries(new FormData(e.target));
+            f.durationInHours = parseInt(f.durationInHours);
+            try {
+                await api('/course', 'POST', f);
+                msg(document.getElementById('courseMsg'), 'Зачувано.', false);
+                e.target.reset();
+                render.course();
+            } catch (err) { msg(document.getElementById('courseMsg'), err.message, true); }
+        };
+    };
+
+    window.deleteCourse = async (id) => {
+        if (!confirm('Избриши го курсот?')) return;
+        await api('/course/' + id, 'DELETE');
+        render.course();
+    };
+
+    window.editCourse = async (id) => {
+        await openEditModal('Измени курс', '/course/' + id, [
+            { name: 'title', label: 'Наслов', required: true },
+            { name: 'category', label: 'Категорија', required: true },
+            { name: 'durationInHours', label: 'Часови', type: 'number', required: true },
+            { name: 'description', label: 'Опис' }
+        ], render.course);
+    };
+
+    // ---------- CLASS ----------
+    render.class = async function () {
+        const el = document.getElementById('tab-class');
+        const classes = await api('/class');
+        el.innerHTML = `
+        <div class="card">
+            <h3>Нова класа</h3>
+            <form id="classForm">
+                <div><label>Име</label><input name="name" required placeholder="10-А"></div>
+                <div><label>Учебна година</label><input name="schoolYear" required placeholder="2025/26"></div>
+                <div><label>Максимален капацитет</label><input name="maxCapacity" type="number" required></div>
+                <div><button class="primary" type="submit">Зачувај</button></div>
+            </form>
+            <div class="msg" id="classMsg"></div>
+        </div>
+        <div class="card">
+            <h3>Класи (${classes.length})</h3>
+            <table><thead><tr><th>Име</th><th>Учебна година</th><th>Капацитет</th><th></th></tr></thead>
+            <tbody>${classes.map(c => `<tr>
+                <td>${c.name}</td><td>${c.schoolYear}</td><td>${c.maxCapacity}</td>
+                <td>
+                    <button class="small edit" onclick="editClass('${c.id}')">Измени</button>
+                    <button class="small danger" onclick="deleteClass('${c.id}')">Избриши</button>
+                </td>
+            </tr>`).join('')}</tbody></table>
+        </div>`;
+
+        document.getElementById('classForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const f = Object.fromEntries(new FormData(e.target));
+            f.maxCapacity = parseInt(f.maxCapacity);
+            try {
+                await api('/class', 'POST', f);
+                msg(document.getElementById('classMsg'), 'Зачувано.', false);
+                e.target.reset();
+                render.class();
+            } catch (err) { msg(document.getElementById('classMsg'), err.message, true); }
+        };
+    };
+
+    window.deleteClass = async (id) => {
+        if (!confirm('Избриши ја класата?')) return;
+        await api('/class/' + id, 'DELETE');
+        render.class();
+    };
+
+    window.editClass = async (id) => {
+        await openEditModal('Измени класа', '/class/' + id, [
+            { name: 'name', label: 'Име', required: true },
+            { name: 'schoolYear', label: 'Учебна година', required: true },
+            { name: 'maxCapacity', label: 'Максимален капацитет', type: 'number', required: true }
+        ], render.class);
+    };
+
+    // ---------- STUDENT ----------
+    render.student = async function () {
+        const el = document.getElementById('tab-student');
+        const students = await api('/student');
+        el.innerHTML = `
+        <div class="card">
+            <h3>Нов студент</h3>
+            <form id="studentForm">
+                <div><label>Име</label><input name="fullName" required></div>
+                <div><label>Емаил</label><input name="email" type="email" required></div>
+                <div><button class="primary" type="submit">Зачувај</button></div>
+            </form>
+            <div class="msg" id="studentMsg"></div>
+        </div>
+        <div class="card">
+            <h3>Студенти (${students.length})</h3>
+            <table><thead><tr><th>Име</th><th>Емаил</th><th></th></tr></thead>
+            <tbody>${students.map(s => `<tr>
+                <td>${s.fullName}</td><td>${s.email}</td>
+                <td>
+                    <button class="small edit" onclick="editStudent('${s.id}')">Измени</button>
+                    <button class="small danger" onclick="deleteStudent('${s.id}')">Избриши</button>
+                </td>
+            </tr>`).join('')}</tbody></table>
+        </div>`;
+
+        document.getElementById('studentForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const f = Object.fromEntries(new FormData(e.target));
+            try {
+                await api('/student', 'POST', f);
+                msg(document.getElementById('studentMsg'), 'Зачувано.', false);
+                e.target.reset();
+                render.student();
+            } catch (err) { msg(document.getElementById('studentMsg'), err.message, true); }
+        };
+    };
+
+    window.deleteStudent = async (id) => {
+        if (!confirm('Избриши го студентот?')) return;
+        await api('/student/' + id, 'DELETE');
+        render.student();
+    };
+
+    window.editStudent = async (id) => {
+        await openEditModal('Измени студент', '/student/' + id, [
+            { name: 'fullName', label: 'Име', required: true },
+            { name: 'email', label: 'Емаил', type: 'email', required: true }
+        ], render.student);
+    };
+
+    // ---------- TEACHING ASSIGNMENT ----------
+    render.teachingassignment = async function () {
+        const el = document.getElementById('tab-teachingassignment');
+        await refreshCache();
+        const list = await api('/teachingassignment');
+        el.innerHTML = `
+        <div class="card">
+            <h3>Нов распоред (Наставник + Курс + Класа)</h3>
+            <form id="taForm">
+                <div><label>Наставник</label><select name="teacherId" required>
+                    ${cache.teachers.map(t => `<option value="${t.id}">${t.fullName}</option>`).join('')}
+                </select></div>
+                <div><label>Курс</label><select name="courseId" required>
+                    ${cache.courses.map(c => `<option value="${c.id}">${c.title}</option>`).join('')}
+                </select></div>
+                <div><label>Класа</label><select name="classId" required>
+                    ${cache.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                </select></div>
+                <div><label>Семестар</label><input name="semester" required placeholder="Зимски 2025/26"></div>
+                <div><label>Соба</label><input name="room"></div>
+                <div><label>Термин</label><input name="scheduleSlot" placeholder="Пон 10:00-11:30"></div>
+                <div><button class="primary" type="submit">Зачувај</button></div>
+            </form>
+            <div class="msg" id="taMsg"></div>
+        </div>
+        <div class="card">
+            <h3>Распореди (${list.length})</h3>
+            <table><thead><tr><th>Наставник</th><th>Курс</th><th>Класа</th><th>Семестар</th><th>Термин</th><th></th></tr></thead>
+            <tbody>${list.map(a => `<tr>
+                <td>${a.teacherName}</td><td>${a.courseTitle}</td><td>${a.className}</td>
+                <td>${a.semester}</td><td>${a.scheduleSlot ?? ''}</td>
+                <td>
+                    <button class="small edit" onclick="editTA('${a.id}')">Измени</button>
+                    <button class="small danger" onclick="deleteTA('${a.id}')">Избриши</button>
+                </td>
+            </tr>`).join('')}</tbody></table>
+        </div>`;
+
+        document.getElementById('taForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const f = Object.fromEntries(new FormData(e.target));
+            try {
+                await api('/teachingassignment', 'POST', f);
+                msg(document.getElementById('taMsg'), 'Зачувано.', false);
+                render.teachingassignment();
+            } catch (err) { msg(document.getElementById('taMsg'), err.message, true); }
+        };
+    };
+
+    window.deleteTA = async (id) => {
+        if (!confirm('Избриши го распоредот?')) return;
+        await api('/teachingassignment/' + id, 'DELETE');
+        render.teachingassignment();
+    };
+
+    window.editTA = async (id) => {
+        await refreshCache();
+        await openEditModal('Измени распоред', '/teachingassignment/' + id, [
+            {
+                name: 'teacherId', label: 'Наставник', type: 'select', required: true,
+                options: cache.teachers.map(t => ({ value: t.id, label: t.fullName }))
+            },
+            {
+                name: 'courseId', label: 'Курс', type: 'select', required: true,
+                options: cache.courses.map(c => ({ value: c.id, label: c.title }))
+            },
+            {
+                name: 'classId', label: 'Класа', type: 'select', required: true,
+                options: cache.classes.map(c => ({ value: c.id, label: c.name }))
+            },
+            { name: 'semester', label: 'Семестар', required: true },
+            { name: 'room', label: 'Соба' },
+            { name: 'scheduleSlot', label: 'Термин' }
+        ], render.teachingassignment);
+    };
+
+    // ---------- ENROLLMENT ----------
+    render.enrollment = async function () {
+        const el = document.getElementById('tab-enrollment');
+        await refreshCache();
+        const list = await api('/enrollment');
+        el.innerHTML = `
+        <div class="card">
+            <h3>Ново запишување</h3>
+            <form id="enrForm">
+                <div><label>Студент</label><select name="studentId" required>
+                    ${cache.students.map(s => `<option value="${s.id}">${s.fullName}</option>`).join('')}
+                </select></div>
+                <div><label>Класа</label><select name="classId" required>
+                    ${cache.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                </select></div>
+                <div><button class="primary" type="submit">Запиши</button></div>
+            </form>
+            <div class="msg" id="enrMsg"></div>
+        </div>
+        <div class="card">
+            <h3>Запишувања (${list.length})</h3>
+            <table><thead><tr><th>Студент</th><th>Класа</th><th>Статус</th><th>Оценка</th><th></th></tr></thead>
+            <tbody>${list.map(e => `<tr>
+                <td>${e.studentName}</td><td>${e.className}</td>
+                <td><span class="badge ${e.status.toLowerCase()}">${e.status}</span></td>
+                <td>${e.finalGrade ?? '-'}</td>
+                <td>
+                    ${e.status === 'Active' ? `<button class="small" onclick="setGrade('${e.id}')">Оцени</button>
+                    <button class="small danger" onclick="dropEnrollment('${e.id}')">Прекини</button>` : ''}
+                </td>
+            </tr>`).join('')}</tbody></table>
+        </div>`;
+
+        document.getElementById('enrForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const f = Object.fromEntries(new FormData(e.target));
+            try {
+                await api('/enrollment', 'POST', f);
+                msg(document.getElementById('enrMsg'), 'Запишано, email е испратен.', false);
+                render.enrollment();
+            } catch (err) { msg(document.getElementById('enrMsg'), err.message, true); }
+        };
+    };
+
+    window.setGrade = async (id) => {
+        const grade = prompt('Внеси оценка (1-5):');
+        if (!grade) return;
+        try {
+            await api(`/enrollment/${id}/grade?finalGrade=${grade}`, 'PUT');
+            render.enrollment();
+        } catch (err) { alert(err.message); }
+    };
+
+    window.dropEnrollment = async (id) => {
+        if (!confirm('Прекини го запишувањето?')) return;
+        try {
+            await api(`/enrollment/${id}/status`, 'PUT', 'Dropped');
+            render.enrollment();
+        } catch (err) { alert(err.message); }
+    };
+
+    // ---------- RESOURCES ----------
+    render.resource = async function () {
+        const el = document.getElementById('tab-resource');
+        const list = await api('/recommendedresource');
+        el.innerHTML = `
+        <div class="card">
+            <h3>Препорачани ресурси (${list.length})</h3>
+            <table><thead><tr><th></th><th>Наслов</th><th>Автор</th><th>Извор</th></tr></thead>
+            <tbody>${list.map(r => `<tr>
+                <td>${r.thumbnailUrl ? `<img class="thumb" src="${r.thumbnailUrl}">` : ''}</td>
+                <td>${r.title}</td><td>${r.author ?? ''}</td><td>${r.source}</td>
+            </tr>`).join('')}</tbody></table>
+        </div>`;
+    };
+
+    // ---------- ETL ----------
+    render.etl = async function () {
+        const el = document.getElementById('tab-etl');
+        const logs = await api('/etlsynclog');
+        el.innerHTML = `
+        <div class="card">
+            <h3>ETL синхронизација</h3>
+            <p style="color:var(--muted);font-size:14px">Повлекува препорачани книги од Open Library за секој курс. Автоматски се извршува на секои 10 минути преку Quartz, или рачно тука.</p>
+            <button class="primary" id="syncBtn">Изврши сега</button>
+            <div class="msg" id="etlMsg"></div>
+        </div>
+        <div class="card">
+            <h3>Историја (${logs.length})</h3>
+            <table><thead><tr><th>Извор</th><th>Статус</th><th>Записи</th><th>Започнато</th></tr></thead>
+            <tbody>${logs.slice().reverse().map(l => `<tr>
+                <td>${l.sourceName}</td><td>${l.status}</td><td>${l.recordsProcessed}</td>
+                <td>${new Date(l.startedAt).toLocaleString()}</td>
+            </tr>`).join('')}</tbody></table>
+        </div>`;
+
+        document.getElementById('syncBtn').onclick = async () => {
+            document.getElementById('syncBtn').disabled = true;
+            try {
+                await api('/etl/sync', 'POST');
+                msg(document.getElementById('etlMsg'), 'Синхронизацијата заврши.', false);
+                render.etl();
+            } catch (err) { msg(document.getElementById('etlMsg'), err.message, true); }
+            document.getElementById('syncBtn').disabled = false;
+        };
+    };
+
+    // ---------- INIT ----------
+    nav();
+    showTab('teacher');
+</script>
+</body>
+</html>
